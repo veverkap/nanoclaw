@@ -147,10 +147,13 @@ function buildVolumeMounts(
     );
   }
 
-  // Sync skills from container/skills/ into each group's .claude/skills/
-  const skillsSrc = path.join(process.cwd(), 'container', 'skills');
+  // Sync skills from container/skills/ and .agents/skills/ into each group's .claude/skills/
   const skillsDst = path.join(groupSessionsDir, 'skills');
-  if (fs.existsSync(skillsSrc)) {
+  for (const skillsSrc of [
+    path.join(process.cwd(), 'container', 'skills'),
+    path.join(process.cwd(), '.agents', 'skills'),
+  ]) {
+    if (!fs.existsSync(skillsSrc)) continue;
     for (const skillDir of fs.readdirSync(skillsSrc)) {
       const srcDir = path.join(skillsSrc, skillDir);
       if (!fs.statSync(srcDir).isDirectory()) continue;
@@ -178,7 +181,7 @@ function buildVolumeMounts(
 
   // Copy agent-runner source into a per-group writable location so agents
   // can customize it (add tools, change behavior) without affecting other
-  // groups. Recompiled on container startup via entrypoint.sh.
+  // groups. Recompiled on container startup via entrypoint.sh only when stale.
   const agentRunnerSrc = path.join(
     projectRoot,
     'container',
@@ -197,6 +200,21 @@ function buildVolumeMounts(
   mounts.push({
     hostPath: groupAgentRunnerDir,
     containerPath: '/app/src',
+    readonly: false,
+  });
+
+  // Persistent compiled output dir — survives between container runs.
+  // The entrypoint only recompiles when source is newer than dist/index.js.
+  const groupAgentRunnerDist = path.join(
+    DATA_DIR,
+    'sessions',
+    group.folder,
+    'agent-runner-dist',
+  );
+  fs.mkdirSync(groupAgentRunnerDist, { recursive: true });
+  mounts.push({
+    hostPath: groupAgentRunnerDist,
+    containerPath: '/tmp/dist',
     readonly: false,
   });
 

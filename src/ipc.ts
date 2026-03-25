@@ -7,12 +7,13 @@ import { DATA_DIR, IPC_POLL_INTERVAL, TIMEZONE } from './config.js';
 import { sendPoolMessage } from './channels/telegram.js';
 import { AvailableGroup } from './container-runner.js';
 import { createTask, deleteTask, getTaskById, updateTask } from './db.js';
-import { isValidGroupFolder } from './group-folder.js';
+import { isValidGroupFolder, resolveGroupFolderPath } from './group-folder.js';
 import { logger } from './logger.js';
 import { RegisteredGroup } from './types.js';
 
 export interface IpcDeps {
   sendMessage: (jid: string, text: string) => Promise<void>;
+  sendPhoto: (jid: string, filePath: string, caption?: string) => Promise<void>;
   registeredGroups: () => Record<string, RegisteredGroup>;
   registerGroup: (jid: string, group: RegisteredGroup) => void;
   syncGroups: (force: boolean) => Promise<void>;
@@ -100,6 +101,40 @@ export function startIpcWatcher(deps: IpcDeps): void {
                   logger.warn(
                     { chatJid: data.chatJid, sourceGroup },
                     'Unauthorized IPC message attempt blocked',
+                  );
+                }
+              } else if (
+                data.type === 'send_photo' &&
+                data.chatJid &&
+                data.filePath
+              ) {
+                // Authorization: verify this group can send to this chatJid
+                const targetGroup = registeredGroups[data.chatJid];
+                if (
+                  isMain ||
+                  (targetGroup && targetGroup.folder === sourceGroup)
+                ) {
+                  // Translate container path to host path.
+                  // Container: /workspace/group/attachments/... → host: {groupDir}/attachments/...
+                  const containerPrefix = '/workspace/group/';
+                  if (!data.filePath.startsWith(containerPrefix)) {
+                    logger.warn(
+                      { chatJid: data.chatJid, filePath: data.filePath, sourceGroup },
+                      'send_photo: filePath must be under /workspace/group/',
+                    );
+                  } else {
+                    const relative = data.filePath.slice(containerPrefix.length);
+                    const hostPath = path.join(resolveGroupFolderPath(sourceGroup), relative);
+                    await deps.sendPhoto(data.chatJid, hostPath, data.caption);
+                    logger.info(
+                      { chatJid: data.chatJid, hostPath, sourceGroup },
+                      'IPC photo sent',
+                    );
+                  }
+                } else {
+                  logger.warn(
+                    { chatJid: data.chatJid, sourceGroup },
+                    'Unauthorized IPC send_photo attempt blocked',
                   );
                 }
               }
