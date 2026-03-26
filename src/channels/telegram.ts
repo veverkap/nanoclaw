@@ -114,7 +114,11 @@ export async function sendPoolMessage(
   const api = poolApis[idx];
   try {
     const numericId = chatId.replace(/^tg:/, '');
-    try { await api.sendChatAction(numericId, 'typing'); } catch { /* non-fatal */ }
+    try {
+      await api.sendChatAction(numericId, 'typing');
+    } catch {
+      /* non-fatal */
+    }
     const MAX_LENGTH = 4096;
     if (text.length <= MAX_LENGTH) {
       await api.sendMessage(numericId, text);
@@ -503,7 +507,11 @@ export class TelegramChannel implements Channel {
     return this.bot !== null;
   }
 
-  async sendPhoto(jid: string, filePath: string, caption?: string): Promise<void> {
+  async sendPhoto(
+    jid: string,
+    filePath: string,
+    caption?: string,
+  ): Promise<void> {
     if (!this.bot) {
       logger.warn('Telegram bot not initialized');
       return;

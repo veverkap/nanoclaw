@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash setup.sh 2>&1)",
+      "Bash(curl -fsSL https://deb.nodesource.com/setup_22.x)",
+      "Bash(sudo -E bash -)",
+      "Bash(sudo apt-get:*)",
+      "Bash(npm run:*)",
+      "Bash(systemctl:*)",
+      "Bash(ffmpeg -version)",
+      "Bash(npx --yes @google/gemini-cli --help)",
+      "Bash(du -sh /home/veverkap/nanoclaw/groups/*/logs)",
+      "Bash(du -sh /home/veverkap/nanoclaw/data/sessions/*/agent-runner-dist)",
+      "Bash(du -sh /tmp/*)",
+      "Bash(docker system:*)",
+      "Bash(docker image:*)",
+      "Bash(du -sh /home/veverkap/config/*)",
+      "Bash(truncate -s 0 /home/veverkap/config/adguard-home/work/data/querylog.json)"
+    ]
+  }
+}

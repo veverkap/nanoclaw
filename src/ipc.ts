@@ -119,12 +119,21 @@ export function startIpcWatcher(deps: IpcDeps): void {
                   const containerPrefix = '/workspace/group/';
                   if (!data.filePath.startsWith(containerPrefix)) {
                     logger.warn(
-                      { chatJid: data.chatJid, filePath: data.filePath, sourceGroup },
+                      {
+                        chatJid: data.chatJid,
+                        filePath: data.filePath,
+                        sourceGroup,
+                      },
                       'send_photo: filePath must be under /workspace/group/',
                     );
                   } else {
-                    const relative = data.filePath.slice(containerPrefix.length);
-                    const hostPath = path.join(resolveGroupFolderPath(sourceGroup), relative);
+                    const relative = data.filePath.slice(
+                      containerPrefix.length,
+                    );
+                    const hostPath = path.join(
+                      resolveGroupFolderPath(sourceGroup),
+                      relative,
+                    );
                     await deps.sendPhoto(data.chatJid, hostPath, data.caption);
                     logger.info(
                       { chatJid: data.chatJid, hostPath, sourceGroup },
